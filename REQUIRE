@@ -1,1 +1,11 @@
 julia 0.6
+Distributions
+GLPKMathProgInterface
+HttpServer
+JLD
+JSON
+JuMP
+LightGraphs
+LightXML
+WebSockets
+Clp

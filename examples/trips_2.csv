@@ -1,0 +1,5 @@
+trips,n,,
+num_pass,from_node,to_node,early,late,
+1,A,B,9:00,9:20
+1,A,C,9:00,9:30
+,
