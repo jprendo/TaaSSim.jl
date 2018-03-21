@@ -28,4 +28,5 @@ const nullTime = -1.0
 const nullDist = -1.0
 const nullValue = -1.0
 const nullString = ""
+
 nullFunction() = nothing

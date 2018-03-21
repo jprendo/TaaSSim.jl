@@ -1,3 +1,12 @@
+type Location
+	x_loc::Float64
+	y_loc::Float64
+	
+	Location(x,y) = new(x, y)
+	Location() = new(nullValue, nullValue)
+	
+end
+
 type Vehicle
 	index::Int
 	capacity::Int #capacity of vehicle
@@ -10,13 +19,17 @@ end
 
 type Request
 	index::Int
-	num_pass::Int #number of passengers required
-	from_node::String #origin node name
-	to_node::String #destination node name
+	num_pass::Int #number of passengers requested for
+	origin::Location
+	destination::Location
+	#from_x_loc::Float64 #origin longitude from depot
+	#from_y_loc::Float64 #origin latitude from depot
+	#to_x_loc::Float64 #destination longitude from depot
+	#to_y_loc::Float64 #destination latitude from depot
 	early::String #earliest time the pickup can occur
 	late::String #latest time the delivery can occur
 	
-	Request() = new(nullIndex, nullValue, nullString, nullString, nullString, nullString)
+	Request() = new(nullIndex, nullValue, Location(), Location(), nullString, nullString)
 end
 
 type Node
@@ -26,4 +39,9 @@ type Node
 	y_loc::Float64 #longitude relative to the depot in km
 	
 	Node() = new(nullIndex, nullString, nullValue, nullValue)
+end
+
+
+type Test
+	origin::Location
 end

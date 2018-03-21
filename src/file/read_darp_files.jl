@@ -66,8 +66,12 @@ function readRequestFile(filename::String)
 		requests[i] = Request()
 		requests[i].index = columns["index"][i]
 		requests[i].num_pass = columns["num_pass"][i]
-		requests[i].from_node = columns["from_node"][i]
-		requests[i].to_node = columns["to_node"][i]
+		requests[i].origin = Location(columns["origin_x_loc"][i],columns["origin_y_loc"][i])
+		requests[i].destination = Location(columns["destination_x_loc"][i],columns["destination_y_loc"][i])
+		#requests[i].from_x_loc = columns["from_x_loc"][i]
+		#requests[i].from_y_loc = columns["from_y_loc"][i]
+		#requests[i].to_x_loc = columns["to_x_loc"][i]
+		#requests[i].to_y_loc = columns["to_y_loc"][i]
 		requests[i].early = columns["early"][i]
 		requests[i].late = columns["late"][i]
 	end
