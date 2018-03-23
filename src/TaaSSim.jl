@@ -3,6 +3,9 @@ module TaaSSim
 
 #optimisation
 using JuMP
+using Clp
+using GLPK
+
 using LightGraphs
 using LightXML
 
@@ -15,7 +18,9 @@ export
 	
 #network functions
 export
-	getDistance, getTravelTime, getTravelTimes, getTravelDistance, getTravelCost, getTripPoint, generateCordeauCostMatrix
+	getDistance, getTravelTime, getTravelTimes, getTravelDistance, getTravelCost, getTripPoint, getRequestedTimes, getRequestedLoads,
+	getMaxTravelTimes, getCapacities,
+	generateCordeauCostMatrix, generateCordeauLoads, generateCordeauTravelTimes
 
 #types
 export 

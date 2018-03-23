@@ -46,7 +46,7 @@ end
 #returns the number of hours from the start of the problem as a float
 function getFloatTime(time::String,start_time::Float64 = 0.0)
     dt = DateTime(time,"HH:MM")
-    return Float64(hour(dt) + minute(dt)/60 - start_time)
+    return Float64(Dates.hour(dt) + Dates.minute(dt)/60 - start_time)
 end
 
 #function to return the travel time between two locations in a given vehicle
@@ -149,7 +149,7 @@ function getRequestedLoads(reqs::Vector{Request})
 end
 
 #gets the travel times between all nodes in the cordeau formulation
-function getCordeauTravelTimes(reqs::Vector{Request}, vehicles=Vector{Vehicle})
+function generateCordeauTravelTimes(reqs::Vector{Request}, vehicles=Vector{Vehicle})
     
     n = length(reqs)
     v = length(vehicles)
