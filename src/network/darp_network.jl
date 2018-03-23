@@ -176,7 +176,7 @@ function generateCordeauCostMatrix(reqs::Vector{Request}, vehicles::Vector{Vehic
     n = length(reqs)
     v = length(vehicles)
     
-    c = Inf*ones(2n+2,2n+2,v) #pre-allocate array
+    c = 10000.0*ones(2n+2,2n+2,v) #pre-allocate array
     
 	#add cost from depot to first pick up locations
     for j = 2:n+1
@@ -221,4 +221,99 @@ function generateCordeauLoads(reqs::Vector{Request})
 	
 	return q
 	
+end
+
+#generates the time windows for service of each node
+function generateTimeWindows(reqs::Vector{Request}, pick_up_window::Float64, delivery_window::Float64)
+
+    n = length(reqs)
+    
+    pick_up, delivery = getRequestedTimes(reqs);
+    
+    e = zeros(2n+2) #no initial early time
+    l = 1000.0*ones(2n+2) #no initial late time
+    
+    e[2:n+1] = pick_up
+    l[2:n+1] = pick_up + pick_up_window
+    
+    #e[n+2:2n+1] = delivery
+    l[n+2:2n+1] = delivery + delivery_window;
+    
+    return e, l
+    
+end
+
+#generates the inputs for the Cordeau DARP formulation
+function generateCordeauInputs(reqs::Vector{Request}, vehicles::Vector{Vehicle})
+    
+    n = length(reqs)
+    v = length(vehicles);
+    
+    e, l = generateTimeWindows(reqs, 10.0/60.0, 5.0/60.0) #TODO variable windows
+    
+    q = generateCordeauLoads(reqs);
+    
+    t = generateCordeauTravelTimes(reqs, vehicles)
+    
+    d = zeros(2n+2); #TODO variable service times (random with requests)
+    
+    T = getMaxTravelTimes(vehicles)
+    
+    Q = getCapacities(vehicles)
+    
+    L = 60.0/60.0 #maximum trip duration
+    
+    c = generateCordeauCostMatrix(reqs, vehicles);
+    
+    return n, v, e, l, q, t, d, T, Q, L, c
+    
+end
+
+#formulates the Cordeau DARP LP
+function formulateCordeauModel(n::Int, v::Int, e::Vector{Float64}, l::Vector{Float64}, q::Vector{Float64}, t::Array{Float64}, d::Vector{Float64}, T::Vector{Float64}, Q::Vector{Float64}, L::Float64, c::Array{Float64})
+   
+    m = Model(solver = CbcSolver()); #Initialise the model
+    
+    @variable(m, x[i=1:2n+2,j=1:2n+2,k=1:v], Bin)
+    @variable(m, u[1:2n+2,1:v])
+    @variable(m, w[1:2n+2,1:v])
+    @variable(m, r[1:2n+2,1:v]);
+    
+    
+    @constraint(m, noselftrips[i=1:2n+2,j=1:2n+2,k=1:v; i ==j], x[i,j,k] == 0.0)
+    @constraint(m, sum(sum(x[i=2:n+1,j,k] for j=1:2n+2) for k=1:v) .== 1)
+    @constraint(m, sum( x[1,j,k=1:v] for j=1:2n+2) .== 1)
+    @constraint(m, sum(x[i,2n+2,k=1:v] for i=1:2n+2) .==1)
+    @constraint(m, sum(x[i=2:n+1,j,k=1:v] for j = 1:2n+2) - sum(x[(i=2:n+1)+n,j,k=1:v] for j = 1:2n+2) .== 0)
+    @constraint(m, sum(x[j,i=2:2n+1,k=1:v] for j = 1:2n+2) - sum(x[i=2:2n+1,j,k=1:v] for j = 1:2n+2) .== 0)
+    
+    @constraint(m, startservconstr[i=2:n+1,k=1:v], r[i,k] >= u[n+i,k] - (u[i,k] + d[i]))
+    @constraint(m, maxtimeconstr[k=1:v], u[2n+2,k] - u[1,k] <= T[k])
+    @constraint(m, reqbndconstr[i=1:2n+2,k=1:v], e[i] <= u[i,k] <= l[i])
+    @constraint(m, ridelenconstr[i=2:n+1,k=1:v], t[i,n+i] <= r[i,k] <= L)
+    @constraint(m, capconstr[i=1:2n+2,k=1:v], max(0,q[i]) <= w[i,k] <= min(Q[k], Q[k]+q[i]));
+    
+    M = 20.0*ones(2n+2,2n+2,v) #TODO dynamic
+    W = 20.0*ones(2n+2,2n+2,v) #TODO dynamic
+
+    @constraint(m, timefeasconstr[i=1:2n+2,j=1:2n+2,k=1:v], u[j,k] >= u[i,k] + d[i] + t[i,j] - M[i,j,k]*(1 - x[i,j,k]))
+    @constraint(m, capfeasconstr[i=1:2n+2,j=1:2n+2,k=1:v], w[j,k] >= w[i,k] + q[i] - W[i,j,k]*(1 - x[i,j,k]))
+    
+    @objective(m, Min, sum(sum(sum(c[i,j,k]*x[i,j,k] for i=1:2n+2) for j=1:2n+2) for k = 1:v))
+    
+    return m, x, u, w, r
+    
+end
+
+#solves the Cordeau DARP
+function solveCordeauModel(reqs::Vector{Request}, vehicles::Vector{Vehicle})
+    
+    n, v, e, l, q, t, d, T, Q, L, cost = generateCordeauInputs(reqs, vehicles)
+    
+    m, x, u, w, r = formulateCordeauModel(n, v, e, l, q, t, d, T, Q, L, cost) #TODO add solver option
+    
+    status = solve(m)
+    
+    return status, m, x, u, w, r
+    
 end

@@ -1,0 +1,5 @@
+vehicles,2,,
+index,capacity,cost_coeff,max_time,speed,
+1,4,1,60,60,
+2,4,2,60,60,
+,

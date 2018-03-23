@@ -5,7 +5,7 @@ module TaaSSim
 using JuMP
 using Clp
 using GLPK
-
+using Cbc
 using LightGraphs
 using LightXML
 
@@ -20,7 +20,7 @@ export
 export
 	getDistance, getTravelTime, getTravelTimes, getTravelDistance, getTravelCost, getTripPoint, getRequestedTimes, getRequestedLoads,
 	getMaxTravelTimes, getCapacities,
-	generateCordeauCostMatrix, generateCordeauLoads, generateCordeauTravelTimes
+	generateCordeauCostMatrix, generateCordeauLoads, generateCordeauTravelTimes, generateTimeWindows, generateCordeauInputs, formulateCordeauModel, solveCordeauModel
 
 #types
 export 
