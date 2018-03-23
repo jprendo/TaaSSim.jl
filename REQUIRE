@@ -9,3 +9,5 @@ LightGraphs
 LightXML
 WebSockets
 Clp
+Cbc
+GLPK
