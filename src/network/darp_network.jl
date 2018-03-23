@@ -43,6 +43,17 @@ function getTravelTimes(nodes::Vector{Node}, vehicles::Vector{Vehicle})
 
 end
 
+#returns the number of hours from the start of the problem as a float
+function getFloatTime(time::String,start_time::Float64 = 0.0)
+    dt = DateTime(time,"HH:MM")
+    return Float64(hour(dt) + minute(dt)/60 - start_time)
+end
+
+#function to return the travel time between two locations in a given vehicle
+function getTravelTime(origin::Location, destination::Location, vehicle::Vehicle)
+    return getTravelDistance(origin, destination)/vehicle.speed
+end
+
 #function to return the straight line distance between a point and the cartesian origin
 function getTravelDistance(location::Location)
    return sqrt(location.x_loc^2 + location.y_loc^2) 
@@ -63,6 +74,36 @@ function getTravelCost(origin::Location, destination::Location, vehicle::Vehicle
     return vehicle.cost_coeff*getTravelDistance(origin,destination)
 end
 
+#gets the vehicle maximum capacities
+function getCapacities(vehicles::Vector{Vehicle})
+    
+    v = length(vehicles)
+    
+    capacities = zeros(v)
+    
+    for k = 1:v
+        capacities[k] = vehicles[k].capacity
+    end
+    
+    return capacities
+    
+end
+
+#gets the maximum duration each vehicle is allowed to be away from the depot
+function getMaxTravelTimes(vehicles::Vector{Vehicle})
+    
+    v = length(vehicles)
+    
+    max_times = zeros(v)
+    
+    for i = 1:v
+        max_times[i] = vehicles[i].max_time
+    end
+    
+    return max_times
+    
+end
+
 #function to return the location which is specified by the Cordeau network formulation for a node i, given n requests
 function getTripPoint(i::Int, n::Int, reqs::Vector{Request})
     
@@ -73,6 +114,59 @@ function getTripPoint(i::Int, n::Int, reqs::Vector{Request})
     end
     
     return point
+    
+end
+
+#gets the earliest pick up and latest delivery times which are specified
+function getRequestedTimes(reqs::Vector{Request}, start_time::Float64 = 0.0)
+    
+    n = length(reqs)
+    
+    early = zeros(n)
+    late = zeros(n)
+    
+    for i = 1:n
+        early[i] = getFloatTime(reqs[i].early,start_time)
+        late[i] = getFloatTime(reqs[i].late,start_time)
+    end
+    
+    return early, late
+end
+
+#gets the requested passenger loads from the request data
+function getRequestedLoads(reqs::Vector{Request})
+   
+    n = length(reqs)
+    
+    loads = zeros(n)
+    
+    for i = 1:n
+        loads[i] = reqs[i].num_pass
+    end
+    
+    return loads
+    
+end
+
+#gets the travel times between all nodes in the cordeau formulation
+function getCordeauTravelTimes(reqs::Vector{Request}, vehicles=Vector{Vehicle})
+    
+    n = length(reqs)
+    v = length(vehicles)
+    times = zeros(2n+2,2n+2,v)
+
+    #times for feasibly travelling between all drop off and pick up locations
+    for i = 2:2n+1
+        for j = 2:2n+1
+            if i != j && i != n + j #cannot travel to the same node, and cannot travel from a drop off to the corresponding pick up
+                for k = 1:v
+                    times[i,j,k] = getTravelTime(getTripPoint(i,n,reqs), getTripPoint(j,n,reqs),vehicles[k])
+                end
+            end
+        end
+    end
+    
+    return times
     
 end
 
@@ -111,4 +205,20 @@ function generateCordeauCostMatrix(reqs::Vector{Request}, vehicles::Vector{Vehic
     
     return c
     
+end
+
+
+#generates the requested load at every point in the Cordeau network
+function generateCordeauLoads(reqs::Vector{Request})
+
+	n = length(reqs)
+	
+	P_loads = getRequestedLoads(reqs)
+	
+	q = zeros(2n+2)
+	q[2:n+1] = P_loads
+	q[n+2:2n+1] = -P_loads
+	
+	return q
+	
 end
